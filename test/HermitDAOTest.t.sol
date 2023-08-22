@@ -27,11 +27,27 @@ contract HermitDAOTest is Test {
        hermitToken.mint(USER,INITIAL_SUPPLY);
 
        vm.startPrank(USER); 
-       hermitToken.delegater(USER);
+       hermitToken.delegate(USER);
 
        timeLock =  new TimeLock(MIN_DELAY,proposers,executors);
        hermitDAO = new HermitDAO(hermitToken,timeLock);
+
+       bytes32 proposerRole = timeLock.PROPOSER_ROLE();
+       bytes32 executorRole = timeLock.EXECUTOR_ROLE();
+       bytes32 adminRole = timeLock.TIMELOCK_ADMIN_ROLE();
+
+       timeLock.grantRole(proposerRole,address(hermitDAO));
+       timeLock.grantRole(executorRole,address(0));
+       timeLock.revokeRole(adminRole,USER);
+
+       vm.stopPrank();
+
+       simpleStorage = new SimpleStorage();
+       simpleStorage.transferOwnership(address(timeLock));
     }
 
- 
+    function testCantUpdateBoxWithoutGovernance() public {
+        vm.expectRevert();
+        simpleStorage.store(5);
+    }
 }
